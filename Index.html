@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Al-Khoiriyah Cup 2026</title>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  background: #f1f5f2;
+  color: #173c2b;
+}
+header {
+  background: #075b38;
+  color: white;
+  text-align: center;
+  padding: 25px 12px;
+}
+header h1 { margin: 0; }
+nav {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  background: #064529;
+}
+nav button {
+  border: 0;
+  padding: 13px;
+  background: transparent;
+  color: white;
+  font-weight: bold;
+}
+section {
+  max-width: 900px;
+  margin: 15px auto;
+  padding: 15px;
+  background: white;
+  border-radius: 12px;
+}
+input, select {
+  padding: 10px;
+  margin: 4px 0;
+  max-width: 100%;
+}
+.action {
+  background: #087443;
+  color: white;
+  border: 0;
+  border-radius: 6px;
+  padding: 10px 14px;
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-top: 12px;
+}
+th, td {
+  border-bottom: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+.hidden { display: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🏆 AL-KHOIRIYAH CUP 2026</h1>
+  <p>Turnamen Mini Soccer Tingkat Pelajar SD/MI</p>
+  <b>KICK OFF 18 OKTOBER 2026</b>
+</header>
+
+<nav>
+  <button onclick="show('home')">Dashboard</button>
+  <button onclick="show('teams')">Data Tim</button>
+  <button onclick="show('matches')">Jadwal & Skor</button>
+  <button onclick="show('standings')">Klasemen</button>
+</nav>
+
+<section id="home">
+  <h2>Dashboard Turnamen</h2>
+  <p>Jumlah Tim: <b id="totalTeams">0</b></p>
+  <p>Jumlah Pertandingan: <b id="totalMatches">0</b></p>
+  <p>Total Gol: <b id="totalGoals">0</b></p>
+  <p>Selamat datang di sistem panitia Al-Khoiriyah Cup 2026.</p>
+</section>
+
+<section id="teams" class="hidden">
+  <h2>Tambah Tim Peserta</h2>
+  <input id="teamName" placeholder="Nama tim / sekolah">
+  <select id="teamGroup">
+    <option>A</option><option>B</option><option>C</option>
+    <option>D</option><option>E</option><option>F</option>
+    <option>G</option><option>H</option>
+  </select>
+  <button class="action" onclick="addTeam()">Tambah Tim</button>
+  <table>
+    <thead><tr><th>Tim</th><th>Grup</th></tr></thead>
+    <tbody id="teamList"></tbody>
+  </table>
+</section>
+
+<section id="matches" class="hidden">
+  <h2>Jadwal & Hasil Pertandingan</h2>
+  <select id="home"></select>
+  <input id="homeScore" type="number" min="0" placeholder="Skor">
+  <b> VS </b>
+  <input id="awayScore" type="number" min="0" placeholder="Skor">
+  <select id="away"></select>
+  <br>
+  <button class="action" onclick="addMatch()">Simpan Hasil</button>
+  <table>
+    <thead><tr><th>Tim A</th><th>Skor</th><th>Tim B</th></tr></thead>
+    <tbody id="matchList"></tbody>
+  </table>
+</section>
+
+<section id="standings" class="hidden">
+  <h2>Klasemen Grup</h2>
+  <select id="standingGroup" onchange="renderStandings()">
+    <option>A</option><option>B</option><option>C</option>
+    <option>D</option><option>E</option><option>F</option>
+    <option>G</option><option>H</option>
+  </select>
+  <table>
+    <thead>
+      <tr><th>Tim</th><th>Main</th><th>Menang</th>
+      <th>Seri</th><th>Kalah</th><th>SG</th><th>Poin</th></tr>
+    </thead>
+    <tbody id="standingList"></tbody>
+  </table>
+</section>
+
+<script>
+let teams = JSON.parse(localStorage.getItem('akTeams') || '[]');
+let matches = JSON.parse(localStorage.getItem('akMatches') || '[]');
+
+function save() {
+  localStorage.setItem('akTeams', JSON.stringify(teams));
+  localStorage.setItem('akMatches', JSON.stringify(matches));
+  render();
+}
+
+function show(id) {
+  document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+  render();
+}
+
+function addTeam() {
+  let name = document.getElementById('teamName').value.trim();
+  let group = document.getElementById('teamGroup').value;
+  if (!name) return alert('Masukkan nama tim!');
+  teams.push({name, group});
+  document.getElementById('teamName').value = '';
+  save();
+}
+
+function addMatch() {
+  let h = document.getElementById('home').value;
+  let a = document.getElementById('away').value;
+  let hs = document.getElementById('homeScore').value;
+  let as = document.getElementById('awayScore').value;
+  if (h === '' || a === '' || h === a || hs === '' || as === '')
+    return alert('Pilih dua tim berbeda dan isi kedua skor!');
+  matches.push({h:+h, a:+a, hs:+hs, as:+as});
+  document.getElementById('homeScore').value = '';
+  document.getElementById('awayScore').value = '';
+  save();
+}
+
+function render() {
+  document.getElementById('totalTeams').textContent = teams.length;
+  document.getElementById('totalMatches').textContent = matches.length;
+  document.getElementById('totalGoals').textContent =
+    matches.reduce((n,m)=>n+m.hs+m.as,0);
+
+  document.getElementById('teamList').innerHTML = teams.map(t =>
+    `<tr><td>${escapeHtml(t.name)}</td><td>${t.group}</td></tr>`
+  ).join('');
+
+  let opts = teams.map((t,i)=>
+    `<option value="${i}">${escapeHtml(t.name)} (Grup ${t.group})</option>`
+  ).join('');
+  document.getElementById('home').innerHTML = opts;
+  document.getElementById('away').innerHTML = opts;
+
+  document.getElementById('matchList').innerHTML = matches.map(m =>
+    `<tr><td>${escapeHtml(teams[m.h]?.name || 'Tim')}</td>
+    <td>${m.hs} - ${m.as}</td>
+    <td>${escapeHtml(teams[m.a]?.name || 'Tim')}</td></tr>`
+  ).join('');
+
+  renderStandings();
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;',
+    '"':'&quot;', "'":'&#39;'
+  }[c]));
+}
+
+function renderStandings() {
+  let group = document.getElementById('standingGroup').value;
+  let rows = teams.filter(t=>t.group===group).map(t=>({
+    name:t.name, played:0, win:0, draw:0, loss:0,
+    gf:0, ga:0, pts:0
+  }));
+
+  matches.forEach(m=>{
+    let h=teams[m.h], a=teams[m.a];
+    if(!h || !a || h.group!==group || a.group!==group) return;
+    let x=rows.find(t=>t.name===h.name);
+    let y=rows.find(t=>t.name===a.name);
+    if(!x || !y) return;
+    x.played++; y.played++;
+    x.gf+=m.hs; x.ga+=m.as;
+    y.gf+=m.as; y.ga+=m.hs;
+    if(m.hs>m.as){x.win++;y.loss++;x.pts+=3;}
+    else if(m.hs<m.as){y.win++;x.loss++;y.pts+=3;}
+    else{x.draw++;y.draw++;x.pts++;y.pts++;}
+  });
+
+  rows.sort((a,b)=>b.pts-a.pts ||
+    (b.gf-b.ga)-(a.gf-a.ga) || b.gf-a.gf);
+
+  document.getElementById('standingList').innerHTML = rows.map(t=>
+    `<tr><td>${escapeHtml(t.name)}</td><td>${t.played}</td>
+    <td>${t.win}</td><td>${t.draw}</td><td>${t.loss}</td>
+    <td>${t.gf-t.ga}</td><td><b>${t.pts}</b></td></tr>`
+  ).join('');
+}
+
+render();
+</script>
+</body>
+</html>
